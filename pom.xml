@@ -53,6 +53,12 @@
         <version.org.jboss.byteman>4.0.2</version.org.jboss.byteman>
         <version.org.jboss.spec.javax.ejb.jboss-ejb-api_3.2_spec>1.0.0.Final</version.org.jboss.spec.javax.ejb.jboss-ejb-api_3.2_spec>
         <version.javax.enterprise>2.0</version.javax.enterprise>
+        <version.neoj4>3.4.1</version.neoj4>
+        <version.infinispan>10.0.1.Final</version.infinispan>
+
+        <!-- Define when the specific container had to be started: -->
+        <maven.docker.infinispan.start>true</maven.docker.infinispan.start>
+        <maven.docker.neo4j.start>true</maven.docker.neo4j.start>
 
         <!--
              Following is the default jgroups mcast address.  If you find the testsuite runs very slowly, there
@@ -112,10 +118,11 @@
         <version.resources.plugin>3.0.2</version.resources.plugin>
         <version.site.plugin>3.6</version.site.plugin>
         <version.source.plugin>3.0.0</version.source.plugin>
-        <version.surefire.plugin>2.21.0</version.surefire.plugin>
+        <version.surefire.plugin>2.22.2</version.surefire.plugin>
         <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
         <version.wildfly.plugin>1.2.1.Final</version.wildfly.plugin>
         <version.org.wildfly.build-tools>1.2.11.Final</version.org.wildfly.build-tools>
+        <version.docker-maven-plugin>0.45.0</version.docker-maven-plugin>
 
         <!-- Asciidoctor -->
 
@@ -388,6 +395,10 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
             </plugin>
         </plugins>
         <pluginManagement>
@@ -840,6 +851,77 @@
                         <logResults>true</logResults>
                         <minSeverity>info</minSeverity>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>${version.docker-maven-plugin}</version>
+                    <configuration>
+                        <images>
+                            <image>
+                                <name>neo4j:${version.neoj4}</name>
+                                <alias>neo4j-database</alias>
+                                <run>
+                                    <skip>${maven.docker.neo4j.start}</skip>
+                                    <env>
+                                        <NEO4J_AUTH>neo4j/jenkins</NEO4J_AUTH>
+                                        <NEO4J_dbms_security_auth__enabled>false</NEO4J_dbms_security_auth__enabled>
+                                    </env>
+                                    <ports>
+                                        <port>7687:7687</port>
+                                        <port>7474:7474</port>
+                                    </ports>
+                                    <wait>
+                                        <http>
+                                            <url>http://localhost:7474/</url>
+                                            <method>GET</method>
+                                            <status>200</status>
+                                        </http>
+                                        <time>50000</time>
+                                    </wait>
+                                </run>
+                            </image>
+                            <image>
+                                <name>infinispan/server:${version.infinispan}</name>
+                                <alias>infinispan-server</alias>
+                                <run>
+                                    <skip>${maven.docker.infinispan.start}</skip>
+                                    <ports>
+                                        <port>11222:11222</port>
+                                    </ports>
+                                    <wait>
+                                        <log>.*Infinispan Server.+started in</log>
+                                        <time>50000</time>
+                                        <!-- <exec>-->
+                                        <!--     <postStart>curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Basic bmVvNGo6bmVvNGo=' -d '{"password":"jenkins"}' http://localhost:7474/user/neo4j/password</postStart>-->
+                                        <!-- </exec>-->
+                                    </wait>
+                                </run>
+                            </image>
+                        </images>
+                    </configuration>
+
+                    <!-- Connect start/stop to pre- and
+                         post-integration-test phase, respectively if you want to start
+                         your docker containers during integration tests -->
+                    <executions>
+                        <execution>
+                            <id>start</id>
+                            <phase>process-test-classes</phase>
+                            <goals>
+                                <!-- "build" should be used to create the images with the artifact -->
+                                <goal>build</goal>
+                                <goal>start</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>stop</id>
+                            <phase>post-integration-test</phase>
+                            <goals>
+                                <goal>stop</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

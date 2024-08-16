@@ -214,6 +214,7 @@
             <id>neo4j-bolt</id>
             <properties>
                 <datastoreProvider>neo4j_bolt</datastoreProvider>
+                <maven.docker.neo4j.start>false</maven.docker.neo4j.start>
             </properties>
         </profile>
 
@@ -222,6 +223,7 @@
             <id>neo4j-http</id>
             <properties>
                 <datastoreProvider>neo4j_http</datastoreProvider>
+                <maven.docker.neo4j.start>false</maven.docker.neo4j.start>
             </properties>
         </profile>
     </profiles>
