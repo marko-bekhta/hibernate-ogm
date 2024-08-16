@@ -214,7 +214,25 @@
             <id>neo4j-bolt</id>
             <properties>
                 <datastoreProvider>neo4j_bolt</datastoreProvider>
+                <maven.docker.neo4j.start.skip>false</maven.docker.neo4j.start.skip>
+                <maven.docker.neo4j.auth.enabled>true</maven.docker.neo4j.auth.enabled>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration combine.self="append" combine.children="append">
+                            <environmentVariables>
+                                <NEO4J_HOSTNAME>localhost</NEO4J_HOSTNAME>
+                                <NEO4J_PORT>7687</NEO4J_PORT>
+                                <NEO4J_USERNAME>neo4j</NEO4J_USERNAME>
+                                <NEO4J_PASSWORD>jenkins</NEO4J_PASSWORD>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <!-- Executes the tests against a separately started Neo4j server using the HTTP interface -->
@@ -222,7 +240,25 @@
             <id>neo4j-http</id>
             <properties>
                 <datastoreProvider>neo4j_http</datastoreProvider>
+                <maven.docker.neo4j.start.skip>false</maven.docker.neo4j.start.skip>
+                <maven.docker.neo4j.auth.enabled>true</maven.docker.neo4j.auth.enabled>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration combine.self="append" combine.children="append">
+                            <environmentVariables>
+                                <NEO4J_HOSTNAME>localhost</NEO4J_HOSTNAME>
+                                <NEO4J_PORT>7474</NEO4J_PORT>
+                                <NEO4J_USERNAME>neo4j</NEO4J_USERNAME>
+                                <NEO4J_PASSWORD>jenkins</NEO4J_PASSWORD>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
