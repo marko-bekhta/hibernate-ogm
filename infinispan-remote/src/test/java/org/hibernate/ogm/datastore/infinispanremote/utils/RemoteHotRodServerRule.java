@@ -8,21 +8,29 @@ package org.hibernate.ogm.datastore.infinispanremote.utils;
 
 import static org.jboss.as.controller.client.helpers.ClientConstants.CONTROLLER_PROCESS_STATE_STARTING;
 import static org.jboss.as.controller.client.helpers.ClientConstants.CONTROLLER_PROCESS_STATE_STOPPING;
+import static org.jboss.as.controller.client.helpers.ClientConstants.NAME;
 import static org.jboss.as.controller.client.helpers.ClientConstants.OP;
 import static org.jboss.as.controller.client.helpers.ClientConstants.OP_ADDR;
 import static org.jboss.as.controller.client.helpers.ClientConstants.OUTCOME;
 import static org.jboss.as.controller.client.helpers.ClientConstants.READ_ATTRIBUTE_OPERATION;
 import static org.jboss.as.controller.client.helpers.ClientConstants.RESULT;
-import static org.jboss.as.controller.client.helpers.ClientConstants.SUCCESS;
-import static org.jboss.as.controller.client.helpers.ClientConstants.NAME;
 import static org.jboss.as.controller.client.helpers.ClientConstants.SUBSYSTEM;
+import static org.jboss.as.controller.client.helpers.ClientConstants.SUCCESS;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.dmr.ModelNode;
+
+import com.google.common.base.Charsets;
 import org.wildfly.core.launcher.Launcher;
 import org.wildfly.core.launcher.StandaloneCommandBuilder;
 
@@ -50,6 +58,9 @@ public final class RemoteHotRodServerRule extends org.junit.rules.ExternalResour
 	 * Reference to the Hot Rod Server process. Access protected by synchronization on the static field "running".
 	 */
 	private Process hotRodServer;
+	private File error;
+	private File output;
+	private Path baseDirectory;
 
 	public RemoteHotRodServerRule() {
 		this.portOffset = 0;
@@ -67,19 +78,27 @@ public final class RemoteHotRodServerRule extends org.junit.rules.ExternalResour
 	public void before() throws Exception {
 		// Synchronize on the static field to defend against concurrent launches,
 		// e.g. the usage as JUnit Rule concurrently with the usage as global test listener in Surefire.
-		synchronized ( running ) {
+		synchronized (running) {
 			if ( running.compareAndSet( false, true ) ) {
 				StandaloneCommandBuilder builder = StandaloneCommandBuilder
 						.of( "target/infinispan-server" );
 				builder
-					.setServerReadOnlyConfiguration( DEFAULT_CONFIG_PATH );
+						.setServerReadOnlyConfiguration( DEFAULT_CONFIG_PATH );
 				if ( portOffset != 0 ) {
 					builder.addJavaOption( "-Djboss.socket.binding.port-offset=" + portOffset );
 				}
 				Launcher launcher = Launcher.of( builder );
 				//This will launch the server w/o redirecting stdin and stdout, as that would corrupt Surefire's own streams when running via Maven.
 				//Might want to use launcher.inherit().launch instead if you need to debug server bootstrap.
-				hotRodServer = launcher.launch();
+				error = File.createTempFile( "wfly", "logs" );
+				output = File.createTempFile( "wfly", "logs" );
+				baseDirectory = builder.getBaseDirectory();
+
+				hotRodServer = launcher
+						.redirectError( error )
+						.redirectOutput( output )
+						.launch();
+
 				waitForRunning();
 			}
 		}
@@ -87,7 +106,7 @@ public final class RemoteHotRodServerRule extends org.junit.rules.ExternalResour
 
 	@Override
 	public void after() {
-		synchronized ( running ) {
+		synchronized (running) {
 			if ( hotRodServer != null ) {
 				running.set( false );
 				hotRodServer.destroyForcibly();
@@ -135,7 +154,32 @@ public final class RemoteHotRodServerRule extends org.junit.rules.ExternalResour
 	}
 
 	private void timedOut() {
-		throw new RuntimeException( "Timed out while waiting for Hot Rod server to have booted successfully" );
+		StringBuilder sb = new StringBuilder();
+
+		try {
+			Files.list( baseDirectory.resolve( "configuration" ) )
+					.forEach( p -> sb.append( p ).append( '\n' ) );
+		}
+		catch (IOException e) {
+		}
+
+		read( error, sb );
+		read( output, sb );
+
+		throw new RuntimeException( "Timed out while waiting for Hot Rod server to have booted successfully: " + sb.toString() );
+	}
+
+	private static void read(File f, StringBuilder sb) {
+		try (
+				FileInputStream fin = new FileInputStream( f );
+				InputStreamReader in = new InputStreamReader( fin, Charsets.UTF_8 );
+				BufferedReader bufferedReader = new BufferedReader( in )
+		) {
+			bufferedReader.lines().forEach( l -> sb.append( l ).append( '\n' ) );
+		}
+		catch (IOException e) {
+
+		}
 	}
 
 	private boolean isServerInRunningState(ModelControllerClient client) {
