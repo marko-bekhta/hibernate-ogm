@@ -57,27 +57,36 @@ public class TestHelper {
 
 	private static final Log log = LoggerFactory.make( MethodHandles.lookup() );
 	private static final String TX_CONTROL_CLASS_NAME = "com.arjuna.ats.arjuna.coordinator.TxControl";
-	private static final GridDialectTestHelper HELPER = determineGridDialectTestHelper();
-	private static final GridDialectType GRID_DIALECT_TYPE = determineGridDialectType();
+	private static final GridDialectTestHelper HELPER;
+	private static final GridDialectType GRID_DIALECT_TYPE;
 
 	static {
-		Class<?> txControlClass = loadClass( TX_CONTROL_CLASS_NAME );
-		if ( txControlClass != null ) {
-			// set 2 hours timeout on transactions: enough for debug, but not too high in case of CI problems.
-			try {
-				Method timeoutMethod = txControlClass.getMethod( "setDefaultTimeout", int.class );
-				timeoutMethod.invoke( null, 60 * 60 * 2 );
+		try {
+			HELPER = determineGridDialectTestHelper();
+			GRID_DIALECT_TYPE = determineGridDialectType();
+
+			Class<?> txControlClass = loadClass( TX_CONTROL_CLASS_NAME );
+			if ( txControlClass != null ) {
+				// set 2 hours timeout on transactions: enough for debug, but not too high in case of CI problems.
+				try {
+					Method timeoutMethod = txControlClass.getMethod( "setDefaultTimeout", int.class );
+					timeoutMethod.invoke( null, 60 * 60 * 2 );
+				}
+				catch ( NoSuchMethodException e ) {
+					log.error( "Found TxControl class, but unable to set timeout" );
+				}
+				catch ( IllegalAccessException e ) {
+					log.error( "Found TxControl class, but unable to set timeout" );
+				}
+				catch ( InvocationTargetException e ) {
+					log.error( "Found TxControl class, but unable to set timeout" );
+				}
+				TxControl.setDefaultTimeout( 60 * 60 * 2 );
 			}
-			catch ( NoSuchMethodException e ) {
-				log.error( "Found TxControl class, but unable to set timeout" );
-			}
-			catch ( IllegalAccessException e ) {
-				log.error( "Found TxControl class, but unable to set timeout" );
-			}
-			catch ( InvocationTargetException e ) {
-				log.error( "Found TxControl class, but unable to set timeout" );
-			}
-			TxControl.setDefaultTimeout( 60 * 60 * 2 );
+		}
+		catch (Throwable e) {
+			e.printStackTrace( System.err );
+			throw e;
 		}
 	}
 

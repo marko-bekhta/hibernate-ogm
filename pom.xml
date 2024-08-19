@@ -56,7 +56,8 @@
         <version.neoj4>3.4.1</version.neoj4>
 
         <!-- Define when the specific container had to be started: -->
-        <maven.docker.neo4j.start>true</maven.docker.neo4j.start>
+        <maven.docker.neo4j.start.skip>true</maven.docker.neo4j.start.skip>
+        <maven.docker.neo4j.auth.enabled>false</maven.docker.neo4j.auth.enabled>
 
         <!--
              Following is the default jgroups mcast address.  If you find the testsuite runs very slowly, there
@@ -860,10 +861,10 @@
                                 <name>neo4j:${version.neoj4}</name>
                                 <alias>neo4j-database</alias>
                                 <run>
-                                    <skip>${maven.docker.neo4j.start}</skip>
+                                    <skip>${maven.docker.neo4j.start.skip}</skip>
                                     <env>
                                         <NEO4J_AUTH>neo4j/jenkins</NEO4J_AUTH>
-                                        <NEO4J_dbms_security_auth__enabled>false</NEO4J_dbms_security_auth__enabled>
+                                        <NEO4J_dbms_security_auth__enabled>${maven.docker.neo4j.auth.enabled}</NEO4J_dbms_security_auth__enabled>
                                     </env>
                                     <ports>
                                         <port>7687:7687</port>

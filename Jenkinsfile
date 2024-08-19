@@ -68,7 +68,7 @@ pipeline {
                                     dir(env.WORKSPACE_TMP + '/.m2repository') {
                                         unstash name: 'original-build-result'
                                     }
-                                    sh "mvn -U clean install -e -X --fail-at-end"
+                                    sh "mvn -U clean install -e --fail-at-end"
                                 }
                             }
                         }
@@ -81,7 +81,7 @@ pipeline {
                                     dir(env.WORKSPACE_TMP + '/.m2repository') {
                                         unstash name: 'original-build-result'
                                     }
-                                    sh "mvn clean install -e -X -Pneo4j-http -pl neo4j --fail-at-end"
+                                    sh "mvn clean install -e -Pneo4j-http -pl neo4j --fail-at-end"
                                 }
                             }
                         }
