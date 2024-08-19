@@ -54,10 +54,8 @@
         <version.org.jboss.spec.javax.ejb.jboss-ejb-api_3.2_spec>1.0.0.Final</version.org.jboss.spec.javax.ejb.jboss-ejb-api_3.2_spec>
         <version.javax.enterprise>2.0</version.javax.enterprise>
         <version.neoj4>3.4.1</version.neoj4>
-        <version.infinispan>10.0.1.Final</version.infinispan>
 
         <!-- Define when the specific container had to be started: -->
-        <maven.docker.infinispan.start>true</maven.docker.infinispan.start>
         <maven.docker.neo4j.start>true</maven.docker.neo4j.start>
 
         <!--
@@ -878,23 +876,6 @@
                                             <status>200</status>
                                         </http>
                                         <time>50000</time>
-                                    </wait>
-                                </run>
-                            </image>
-                            <image>
-                                <name>infinispan/server:${version.infinispan}</name>
-                                <alias>infinispan-server</alias>
-                                <run>
-                                    <skip>${maven.docker.infinispan.start}</skip>
-                                    <ports>
-                                        <port>11222:11222</port>
-                                    </ports>
-                                    <wait>
-                                        <log>.*Infinispan Server.+started in</log>
-                                        <time>50000</time>
-                                        <!-- <exec>-->
-                                        <!--     <postStart>curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Basic bmVvNGo6bmVvNGo=' -d '{"password":"jenkins"}' http://localhost:7474/user/neo4j/password</postStart>-->
-                                        <!-- </exec>-->
                                     </wait>
                                 </run>
                             </image>
